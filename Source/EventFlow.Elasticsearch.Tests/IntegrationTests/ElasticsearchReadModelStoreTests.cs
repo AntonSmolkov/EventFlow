@@ -55,11 +55,16 @@ namespace EventFlow.Elasticsearch.Tests.IntegrationTests
 
         protected override IRootResolver CreateRootResolver(IEventFlowOptions eventFlowOptions)
         {
-            var elasticsearchUrl = Environment.GetEnvironmentVariable("ELASTICSEARCH_URL");
+            var elasticsearchUrl = Environment.GetEnvironmentVariable("ELASTICSEARCH_URL") ?? "http://localhost:9200";
+
+            var connectionSettings = new ConnectionSettings(new Uri(elasticsearchUrl))
+                .ThrowExceptions()
+                .SniffLifeSpan(TimeSpan.FromMinutes(5))
+                .DisablePing();
            
             var resolver = eventFlowOptions
                 .RegisterServices(sr => { sr.RegisterType(typeof(ThingyMessageLocator)); })
-                .ConfigureElasticsearch(elasticsearchUrl)
+                .ConfigureElasticsearch(connectionSettings)
                 .UseElasticsearchReadModelFor<ThingyAggregate, ThingyId, ElasticsearchThingyReadModel>()
                 .UseElasticsearchReadModel<ElasticsearchThingyMessageReadModel, ThingyMessageLocator>()
                 .AddQueryHandlers(
